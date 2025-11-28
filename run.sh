@@ -39,12 +39,16 @@ case "${UI_PORT:-}" in ""|null) UI_PORT="8099";; esac
 mkdir -p "$EVENT_DIR"
 
 # --- MQTT-Creds automatisch aus HA (falls leer) ---
-if { [ -z "${MQTT_USER}" ] || [ -z "${MQTT_PASS}" ]; } && bashio::services "mqtt" > /dev/null; then
-  MQTT_HOST="$(bashio::services 'mqtt' 'host')"
-  MQTT_PORT="$(bashio::services 'mqtt' 'port')"
-  MQTT_USER="$(bashio::services 'mqtt' 'username')"
-  MQTT_PASS="$(bashio::services 'mqtt' 'password')"
-  echo "[wp-audio] MQTT creds via HA service: ${MQTT_USER}@${MQTT_HOST}:${MQTT_PORT}"
+if { [ -z "${MQTT_USER}" ] || [ -z "${MQTT_PASS}" ]; }; then
+  if bashio::services "mqtt" > /dev/null 2>&1; then
+    MQTT_HOST="$(bashio::services 'mqtt' 'host' 2>/dev/null)" || MQTT_HOST="core-mosquitto"
+    MQTT_PORT="$(bashio::services 'mqtt' 'port' 2>/dev/null)" || MQTT_PORT="1883"
+    MQTT_USER="$(bashio::services 'mqtt' 'username' 2>/dev/null)" || MQTT_USER=""
+    MQTT_PASS="$(bashio::services 'mqtt' 'password' 2>/dev/null)" || MQTT_PASS=""
+    echo "[wp-audio] MQTT creds via HA service: ${MQTT_USER}@${MQTT_HOST}:${MQTT_PORT}"
+  else
+    echo "[wp-audio] MQTT service not available; using configured values"
+  fi
 fi
 
 # --- Pulse vom Supervisor mounten & konfigurieren ---
