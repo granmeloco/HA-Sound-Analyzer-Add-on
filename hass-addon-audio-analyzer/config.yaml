@@ -10,7 +10,7 @@ homeassistant_api: true
 hassio_role: default
 privileged: false
 map:
-  - media:rw
+  - "media:rw"
 
 # Direktzugriff in linker Menüleiste
 panel_iframe:
