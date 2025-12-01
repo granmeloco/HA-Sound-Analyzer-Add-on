@@ -132,10 +132,14 @@ def main():
 
     # MQTT
     connected = {"ok": False}
-    # paho-mqtt Callback API v2 signature: on_connect(client, userdata, flags, reason_code, properties)
-    def on_connect(client, userdata, flags, reason_code, properties=None):
-        # reason_code == 0 indicates success
-        if int(getattr(reason_code, 'value', reason_code)) == 0:
+    # Be robust to paho v1/v2 signatures
+    # v2: on_connect(client, userdata, flags, reason_code, properties)
+    # v1: on_connect(client, userdata, flags, rc)
+    def on_connect(client, userdata, flags, *args):
+        reason_code = args[0] if args else 0
+        # v2 ReasonCodes have .value; v1 provides int rc
+        rc_val = int(getattr(reason_code, 'value', reason_code))
+        if rc_val == 0:
             connected["ok"] = True
             print("[wp-audio] MQTT verbunden")
             client.publish(f"{args.topic_base}/availability", "online", qos=1, retain=True)
@@ -154,12 +158,16 @@ def main():
             client.publish(f"{disc}/sensor/{dev_id}/octA_160/config", json.dumps(cfg160), qos=1, retain=True)
             client.publish(f"{disc}/sensor/{dev_id}/spectrum/config", json.dumps(cfgspec), qos=1, retain=True)
         else:
-            print(f"[wp-audio] MQTT connect failed rc={reason_code}")
+            print(f"[wp-audio] MQTT connect failed rc={rc_val}")
 
-    # paho-mqtt Callback API v2 signature: on_disconnect(client, userdata, reason_code, properties)
-    def on_disconnect(client, userdata, reason_code, properties=None):
+    # Be robust to paho v1/v2 signatures
+    # v2: on_disconnect(client, userdata, reason_code, properties)
+    # v1: on_disconnect(client, userdata, rc)
+    def on_disconnect(client, userdata, *args):
+        reason_code = args[0] if args else 0
+        rc_val = int(getattr(reason_code, 'value', reason_code))
         connected["ok"] = False
-        print(f"[wp-audio] MQTT disconnected rc={reason_code}")
+        print(f"[wp-audio] MQTT disconnected rc={rc_val}")
 
     # Use modern callback API (VERSION2) to avoid deprecation warning
     client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2, protocol=mqtt.MQTTv311)
