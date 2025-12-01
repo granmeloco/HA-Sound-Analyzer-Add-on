@@ -1,53 +1,43 @@
-#!/usr/bin/env python3
 import re
-import argparse
 from pathlib import Path
 
+MANIFEST_PATH = Path(__file__).resolve().parent.parent / "wp_audio_trigger" / "config.yaml"
 
-def read_version(text: str):
-    m = re.search(r"^version:\s*\"?([0-9]+)\.([0-9]+)\.([0-9]+)\"?", text, flags=re.M)
+def bump_patch(version: str) -> str:
+    m = re.match(r"^(\d+)\.(\d+)\.(\d+)$", version.strip())
     if not m:
-        raise SystemExit("Unable to find version in config.yaml")
-    return int(m.group(1)), int(m.group(2)), int(m.group(3))
-
-
-def write_version(text: str, major: int, minor: int, patch: int):
-    new_text = re.sub(r"^version:\s*\"?[0-9]+\.[0-9]+\.[0-9]+\"?",
-                      f"version: \"{major}.{minor}.{patch}\"",
-                      text, count=1, flags=re.M)
-    return new_text
-
-
-def bump(path: Path, kind: str):
-    text = path.read_text(encoding="utf-8")
-    major, minor, patch = read_version(text)
-    if kind == "patch":
-        patch += 1
-    elif kind == "minor":
-        minor += 1
-        patch = 0
-    elif kind == "major":
-        major += 1
-        minor = 0
-        patch = 0
-    else:
-        raise SystemExit("Unknown bump kind")
-    new_text = write_version(text, major, minor, patch)
-    path.write_text(new_text, encoding="utf-8")
-    print(f"Bumped version to {major}.{minor}.{patch}")
+        # If not semver patch, fallback to minor bump like 0.1.12 -> 0.1.13 treating last part as patch
+        parts = version.strip().split(".")
+        if len(parts) >= 2:
+            try:
+                parts[-1] = str(int(parts[-1]) + 1)
+                return ".".join(parts)
+            except ValueError:
+                return version
+        return version
+    major, minor, patch = map(int, m.groups())
+    patch += 1
     return f"{major}.{minor}.{patch}"
 
-
 def main():
-    p = argparse.ArgumentParser()
-    p.add_argument("--bump", choices=["patch", "minor", "major"], default="patch")
-    p.add_argument("--file", default="config.yaml")
-    args = p.parse_args()
-    path = Path(args.file)
-    if not path.exists():
-        raise SystemExit(f"File not found: {path}")
-    bump(path, args.bump)
+    if not MANIFEST_PATH.exists():
+        print(f"Manifest not found: {MANIFEST_PATH}")
+        return 0
+    text = MANIFEST_PATH.read_text(encoding="utf-8")
+    # Find version: "x.y.z" and bump
+    m = re.search(r"^version:\s*\"([^\"]+)\"\s*$", text, re.MULTILINE)
+    if not m:
+        print("No version field found to bump.")
+        return 0
+    current = m.group(1)
+    new_version = bump_patch(current)
+    if new_version == current:
+        print(f"Version unchanged: {current}")
+        return 0
+    updated = re.sub(r"^version:\s*\"[^\"]+\"\s*$", f"version: \"{new_version}\"", text, flags=re.MULTILINE)
+    MANIFEST_PATH.write_text(updated, encoding="utf-8")
+    print(f"Bumped version: {current} -> {new_version}")
+    return 0
 
-
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+    raise SystemExit(main())
