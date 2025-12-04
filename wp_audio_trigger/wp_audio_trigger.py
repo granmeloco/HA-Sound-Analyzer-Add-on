@@ -132,14 +132,8 @@ def main():
 
     # MQTT
     connected = {"ok": False}
-    # Be robust to paho v1/v2 signatures
-    # v2: on_connect(client, userdata, flags, reason_code, properties)
-    # v1: on_connect(client, userdata, flags, rc)
-    def on_connect(client, userdata, flags, *args):
-        reason_code = args[0] if args else 0
-        # v2 ReasonCodes have .value; v1 provides int rc
-        rc_val = int(getattr(reason_code, 'value', reason_code))
-        if rc_val == 0:
+    def on_connect(client, userdata, flags, rc, properties=None):
+        if rc == 0:
             connected["ok"] = True
             print("[wp-audio] MQTT verbunden")
             client.publish(f"{args.topic_base}/availability", "online", qos=1, retain=True)
@@ -158,19 +152,13 @@ def main():
             client.publish(f"{disc}/sensor/{dev_id}/octA_160/config", json.dumps(cfg160), qos=1, retain=True)
             client.publish(f"{disc}/sensor/{dev_id}/spectrum/config", json.dumps(cfgspec), qos=1, retain=True)
         else:
-            print(f"[wp-audio] MQTT connect failed rc={rc_val}")
+            print(f"[wp-audio] MQTT connect failed rc={rc}")
 
-    # Be robust to paho v1/v2 signatures
-    # v2: on_disconnect(client, userdata, reason_code, properties)
-    # v1: on_disconnect(client, userdata, rc)
-    def on_disconnect(client, userdata, *args):
-        reason_code = args[0] if args else 0
-        rc_val = int(getattr(reason_code, 'value', reason_code))
+    def on_disconnect(client, userdata, rc, properties=None):
         connected["ok"] = False
-        print(f"[wp-audio] MQTT disconnected rc={rc_val}")
+        print(f"[wp-audio] MQTT disconnected rc={rc}")
 
-    # Use modern callback API (VERSION2) to avoid deprecation warning
-    client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2, protocol=mqtt.MQTTv311)
+    client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION1, protocol=mqtt.MQTTv311)
     client.on_connect = on_connect; client.on_disconnect = on_disconnect
     client.will_set(f"{args.topic_base}/availability", payload="offline", qos=1, retain=True)
     if args.mqtt_user: client.username_pw_set(args.mqtt_user, args.mqtt_pass)
