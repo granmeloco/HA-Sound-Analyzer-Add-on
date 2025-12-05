@@ -59,22 +59,27 @@ HTML = """<!DOCTYPE html><meta charset=utf-8>
 <title>Audio Analyzer settings</title>
 <style>
 body{font-family:Arial,sans-serif;margin:0;padding:20px;background:#fff;max-width:1000px;margin:0 auto}
-h1{text-align:center;font-size:24px;margin-bottom:20px}
-.section{background:#e8e8e8;padding:12px;margin-bottom:16px;border-radius:4px}
-.section-title{font-weight:bold;margin-bottom:12px;font-size:14px}
-.row{display:flex;gap:20px;margin-bottom:10px;align-items:center}
-.radio-group{display:flex;align-items:center;gap:8px}
+h1{text-align:center;font-size:22px;margin-bottom:20px;font-weight:normal}
+.section{background:#e8e8e8;padding:16px;margin-bottom:16px;border-radius:4px}
+.section-title{font-weight:bold;margin-bottom:16px;font-size:14px}
+.row{display:flex;gap:10px;margin-bottom:10px;align-items:center}
+.radio-group{display:flex;align-items:center;gap:6px}
 .radio-group input[type=radio]{margin:0}
-.radio-group label{margin:0;font-size:13px}
-.field-label{min-width:180px;font-size:13px}
-input[type=text],input[type=number]{padding:4px 8px;border:1px solid #999;font-size:13px;width:100px}
-.freq-range{font-size:11px;color:#666;margin-left:10px}
-.trigger-row{display:grid;grid-template-columns:180px 100px 150px 100px 150px;gap:15px;align-items:center;margin-bottom:8px}
-.calib-row{display:flex;gap:15px;align-items:center;margin-bottom:8px}
-.calib-label{min-width:40px;text-align:center;font-size:12px}
-input[type=text].calib{width:60px;text-align:center}
-button{background:#4aa3a2;color:white;border:none;padding:8px 20px;border-radius:4px;cursor:pointer;font-size:13px;margin-top:10px}
-button:hover{background:#3a8a89}
+.radio-group label{margin:0;font-size:13px;font-weight:normal}
+.field-label{font-size:13px;white-space:nowrap}
+input[type=text],input[type=number]{padding:5px 8px;border:1px solid #999;font-size:13px;width:100px;background:white}
+.freq-range{font-size:11px;color:#666}
+.trigger-grid{display:grid;grid-template-columns:140px 110px 180px 110px 180px 110px;gap:10px;align-items:center;margin-bottom:10px}
+.trigger-grid.header{font-weight:normal;font-size:12px;margin-bottom:12px}
+.trigger-grid input{width:90px}
+.freq-input-row{display:flex;gap:25px;align-items:center;margin-top:10px}
+.calib-grid{display:flex;gap:12px;align-items:flex-start}
+.calib-col{display:flex;flex-direction:column;align-items:center;gap:4px}
+.calib-col input{width:70px;text-align:center}
+.calib-col span{font-size:11px}
+.calib-label{font-size:13px;margin-right:8px;align-self:center}
+button{background:#17a2b8;color:white;border:none;padding:8px 24px;border-radius:4px;cursor:pointer;font-size:13px;margin-top:10px}
+button:hover{background:#138496}
 #status{margin-top:10px;padding:8px;border-radius:4px;font-size:13px;display:none}
 #status.success{background:#d4edda;color:#155724;display:block}
 #status.error{background:#f8d7da;color:#721c24;display:block}
@@ -97,23 +102,25 @@ button:hover{background:#3a8a89}
     </div>
     <span class=freq-range>(1 - 1.25 - 1.6 - 2 - 2.5 - 3.15 - 4 - 5 - 6.3 - 8 - 10 - 12.5 - 16 - 20 - 25 - 31.5 - 40 - 50 - 63 - 80 - 100 - 125 - 160 - 200 - 250 - 315 - 400 - 500 - 630 - 800 - 1000 - 1250 - 1600 - 2000 - 2500 - 3150 - 4000 - 5000 - 6300 - 8000 - 10000 - 12500 - 16000 - 20000 Hz)</span>
   </div>
-  <div class=row>
+  <div class=freq-input-row>
     <span class=field-label>Min. Frequency [Hz]</span>
     <input type=number id=minFreq value=31.5 step=0.1>
-    <span class=field-label style="margin-left:20px">Max. Frequency [Hz]</span>
+    <span class=field-label>Max. Frequency [Hz]</span>
     <input type=number id=maxFreq value=20000 step=0.1>
   </div>
 </div>
 
 <div class=section>
   <div class=section-title>Audio trigger settings</div>
-  <div class=trigger-row style="font-weight:bold;font-size:12px">
+  <div class=trigger-grid class=header>
     <span></span>
     <span>Frequency [Hz]</span>
     <span>Min. amplitude [dBA]</span>
+    <span></span>
     <span>Min. duration [s]</span>
+    <span></span>
   </div>
-  <div class=trigger-row>
+  <div class=trigger-grid>
     <span class=field-label>1. Frequency [Hz]</span>
     <input type=number id=t1freq placeholder="">
     <span class=field-label>Min. amplitude [dBA]</span>
@@ -121,7 +128,7 @@ button:hover{background:#3a8a89}
     <span class=field-label>Min. duration [s]</span>
     <input type=number id=t1dur placeholder="" step=0.1>
   </div>
-  <div class=trigger-row>
+  <div class=trigger-grid>
     <span class=field-label>2. Frequency [Hz]</span>
     <input type=number id=t2freq placeholder="">
     <span class=field-label>Min. amplitude [dBA]</span>
@@ -129,7 +136,7 @@ button:hover{background:#3a8a89}
     <span class=field-label>Min. duration [s]</span>
     <input type=number id=t2dur placeholder="" step=0.1>
   </div>
-  <div class=trigger-row>
+  <div class=trigger-grid>
     <span class=field-label>3. Frequency [Hz]</span>
     <input type=number id=t3freq placeholder="">
     <span class=field-label>Min. amplitude [dBA]</span>
@@ -137,7 +144,7 @@ button:hover{background:#3a8a89}
     <span class=field-label>Min. duration [s]</span>
     <input type=number id=t3dur placeholder="" step=0.1>
   </div>
-  <div class=trigger-row>
+  <div class=trigger-grid>
     <span class=field-label>4. Frequency [Hz]</span>
     <input type=number id=t4freq placeholder="">
     <span class=field-label>Min. amplitude [dBA]</span>
@@ -172,27 +179,27 @@ button:hover{background:#3a8a89}
 
 <div class=section>
   <div class=section-title>Mic calibration settings</div>
-  <div class=calib-row>
+  <div class=calib-grid>
     <span class=calib-label>+/-</span>
-    <div style="display:flex;flex-direction:column;align-items:center">
-      <input type=text class=calib id=cal63 placeholder="">
-      <span style="font-size:11px;margin-top:2px">63Hz</span>
+    <div class=calib-col>
+      <input type=text id=cal63 placeholder="">
+      <span>63Hz</span>
     </div>
-    <div style="display:flex;flex-direction:column;align-items:center">
-      <input type=text class=calib id=cal250 placeholder="">
-      <span style="font-size:11px;margin-top:2px">250Hz</span>
+    <div class=calib-col>
+      <input type=text id=cal250 placeholder="">
+      <span>250Hz</span>
     </div>
-    <div style="display:flex;flex-direction:column;align-items:center">
-      <input type=text class=calib id=cal1000 placeholder="">
-      <span style="font-size:11px;margin-top:2px">1000Hz</span>
+    <div class=calib-col>
+      <input type=text id=cal1000 placeholder="">
+      <span>1000Hz</span>
     </div>
-    <div style="display:flex;flex-direction:column;align-items:center">
-      <input type=text class=calib id=cal4000 placeholder="">
-      <span style="font-size:11px;margin-top:2px">4000Hz</span>
+    <div class=calib-col>
+      <input type=text id=cal4000 placeholder="">
+      <span>4000Hz</span>
     </div>
-    <div style="display:flex;flex-direction:column;align-items:center">
-      <input type=text class=calib id=cal16000 placeholder="">
-      <span style="font-size:11px;margin-top:2px">16000Hz</span>
+    <div class=calib-col>
+      <input type=text id=cal16000 placeholder="">
+      <span>16000Hz</span>
     </div>
   </div>
 </div>
