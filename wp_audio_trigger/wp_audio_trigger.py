@@ -545,6 +545,9 @@ def main():
             cfgspec={"name":"WP Spectrum","unique_id":f"{dev_id}_spectrum","state_topic":f"{args.topic_base}/spectrum",
                      "value_template":"{{ value_json.ts }}","json_attributes_topic":f"{args.topic_base}/spectrum",
                      "availability_topic":f"{args.topic_base}/availability","device":dev,"icon":"mdi:waveform"}
+            cfgspec_live={"name":"WP Spectrum Live","unique_id":f"{dev_id}_spectrum_live","state_topic":f"{args.topic_base}/spectrum_live",
+                     "value_template":"{{ value_json.ts }}","json_attributes_topic":f"{args.topic_base}/spectrum_live",
+                     "availability_topic":f"{args.topic_base}/availability","device":dev,"icon":"mdi:waveform"}
             
             # Create a switch to control spectrum recording
             cfgswitch={"name":"Record Spectrum","unique_id":f"{dev_id}_record_spectrum",
@@ -559,6 +562,7 @@ def main():
             client.publish(f"{disc}/sensor/{dev_id}/octA_80/config",  json.dumps(cfg80),  qos=1, retain=True)
             client.publish(f"{disc}/sensor/{dev_id}/octA_160/config", json.dumps(cfg160), qos=1, retain=True)
             client.publish(f"{disc}/sensor/{dev_id}/spectrum/config", json.dumps(cfgspec), qos=1, retain=True)
+            client.publish(f"{disc}/sensor/{dev_id}/spectrum_live/config", json.dumps(cfgspec_live), qos=1, retain=True)
             client.publish(f"{disc}/switch/{dev_id}/record_spectrum/config", json.dumps(cfgswitch), qos=1, retain=True)
             
             # Publish initial state
@@ -755,12 +759,15 @@ def main():
                     v = lz + (a_corr(fc) if args.spectrum_weighting=="A" else 0.0)
                     vals.append(v)
                 payload={"bands":[str(int(fc)) if fc>=100 else str(fc) for fc in FCS_FULL],
-                         "values":vals,"weighting":args.spectrum_weighting,"ts":now_utc(),
-                         "record":record_spectrum["enabled"]}
+                         "values":vals,"weighting":args.spectrum_weighting,"ts":now_utc()}
                 latest_payload.update(payload)
-                # Always publish spectrum for visual display
-                try: client.publish(f"{args.topic_base}/spectrum", json.dumps(payload), qos=0)
+                # Always publish to spectrum_live for visual display
+                try: client.publish(f"{args.topic_base}/spectrum_live", json.dumps(payload), qos=0)
                 except: pass
+                # Only publish to spectrum (for recording) when enabled
+                if record_spectrum["enabled"]:
+                    try: client.publish(f"{args.topic_base}/spectrum", json.dumps(payload), qos=0)
+                    except: pass
                 last_spec_pub = nowm
 
             # Dynamic Trigger Evaluation
