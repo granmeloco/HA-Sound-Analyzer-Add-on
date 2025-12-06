@@ -755,12 +755,12 @@ def main():
                     v = lz + (a_corr(fc) if args.spectrum_weighting=="A" else 0.0)
                     vals.append(v)
                 payload={"bands":[str(int(fc)) if fc>=100 else str(fc) for fc in FCS_FULL],
-                         "values":vals,"weighting":args.spectrum_weighting,"ts":now_utc()}
+                         "values":vals,"weighting":args.spectrum_weighting,"ts":now_utc(),
+                         "record":record_spectrum["enabled"]}
                 latest_payload.update(payload)
-                # Only publish to MQTT (and thus record to database) if recording is enabled
-                if record_spectrum["enabled"]:
-                    try: client.publish(f"{args.topic_base}/spectrum", json.dumps(payload), qos=0)
-                    except: pass
+                # Always publish spectrum for visual display
+                try: client.publish(f"{args.topic_base}/spectrum", json.dumps(payload), qos=0)
+                except: pass
                 last_spec_pub = nowm
 
             # Dynamic Trigger Evaluation
