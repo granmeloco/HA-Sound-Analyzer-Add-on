@@ -275,9 +275,10 @@ function saveConfig(){
 class H(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         # Log HTTP requests for debugging
-        print(f"[wp-audio] HTTP {format % args}")
+        print(f"[wp-audio] HTTP {format % args}", flush=True)
     
     def do_GET(self):
+        print(f"[wp-audio] GET request: {self.path}", flush=True)
         try:
             if self.path in ("/","/index.html","//","/index.htm"):
                 self.send_response(200)
@@ -342,6 +343,7 @@ class H(BaseHTTPRequestHandler):
                 pass
     
     def do_POST(self):
+        print(f"[wp-audio] POST request: {self.path}", flush=True)
         try:
             content_length = int(self.headers.get('Content-Length', 0))
             body = self.rfile.read(content_length).decode('utf-8')
