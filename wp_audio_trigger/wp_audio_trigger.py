@@ -276,14 +276,16 @@ function saveConfig(){
   .then(r=>r.json())
   .then(data=>{
     if(data.success){
+      statusDiv.style.display='block';
       statusDiv.textContent='Configuration saved successfully!';
       statusDiv.className='success';
-      setTimeout(()=>statusDiv.style.display='none',3000);
+      setTimeout(()=>{statusDiv.style.display='none';statusDiv.className='';},3000);
     }else{
+      statusDiv.style.display='block';
       statusDiv.textContent='Error saving configuration';
       statusDiv.className='error';
     }
-  }).catch(e=>{statusDiv.textContent='Connection error: '+e.message;statusDiv.className='error';});
+  }).catch(e=>{statusDiv.style.display='block';statusDiv.textContent='Connection error: '+e.message;statusDiv.className='error';});
 }
 </script>"""
 
