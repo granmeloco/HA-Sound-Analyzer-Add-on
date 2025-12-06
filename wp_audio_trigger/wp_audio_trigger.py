@@ -277,9 +277,13 @@ function saveConfig(){
   .then(data=>{
     if(data.success){
       statusDiv.style.display='block';
-      statusDiv.textContent='Configuration saved successfully!';
+      if(data.restarting){
+        statusDiv.textContent='Configuration saved! Add-on is restarting to apply changes...';
+      }else{
+        statusDiv.textContent='Configuration saved successfully!';
+      }
       statusDiv.className='success';
-      setTimeout(()=>{statusDiv.style.display='none';statusDiv.className='';},3000);
+      setTimeout(()=>{statusDiv.style.display='none';statusDiv.className='';},5000);
     }else{
       statusDiv.style.display='block';
       statusDiv.textContent='Error saving configuration';
@@ -401,11 +405,22 @@ class H(BaseHTTPRequestHandler):
                     with open(config_file, "w") as f:
                         json.dump(data, f, indent=2)
                     print(f"[wp-audio] Configuration saved to {config_file}: {len(data.get('triggers', []))} triggers, logic={data.get('logic')}", flush=True)
+                    
+                    # Trigger add-on restart to apply configuration changes
+                    import subprocess
+                    import threading
+                    def restart_addon():
+                        import time
+                        time.sleep(2)  # Wait 2 seconds to allow response to be sent
+                        print("[wp-audio] Restarting add-on to apply configuration changes...", flush=True)
+                        subprocess.run(["s6-svc", "-r", "/run/service/addon"])
+                    threading.Thread(target=restart_addon, daemon=True).start()
+                    
                     self.send_response(200)
                     self.send_header("Content-Type","application/json")
                     self.send_header("Access-Control-Allow-Origin", "*")
                     self.end_headers()
-                    self.wfile.write(json.dumps({"success": True}).encode("utf-8"))
+                    self.wfile.write(json.dumps({"success": True, "restarting": True}).encode("utf-8"))
                     return
                 except Exception as e:
                     print(f"[wp-audio] Config save error: {e}", flush=True)
