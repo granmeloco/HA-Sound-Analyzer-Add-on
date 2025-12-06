@@ -58,7 +58,7 @@ def load_cal(path):
 
 def device_info():
     # Use fixed ID to prevent duplicate devices on container restart
-    dev_id = "wp_audio_trigger_addon"
+    dev_id = "wp_audio_trigger"
     return {
         "identifiers": [dev_id],
         "manufacturer": "WP Audio",
