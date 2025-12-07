@@ -546,20 +546,20 @@ def main():
             print(f"[wp-audio] Subscribed to {args.topic_base}/record_spectrum/set", flush=True)
             
             dev, dev_id = device_info(); disc = "homeassistant"
-            cfgspec={"name":"WP Spectrum","unique_id":f"{dev_id}_wp_spectrum","state_topic":f"{args.topic_base}/spectrum",
+            cfgspec={"name":"AT Spectrum","unique_id":f"{dev_id}_wp_spectrum","state_topic":f"{args.topic_base}/spectrum",
                      "value_template":"{{ value_json.ts }}","json_attributes_topic":f"{args.topic_base}/spectrum",
                      "availability_topic":f"{args.topic_base}/availability","device":dev,"icon":"mdi:waveform"}
-            cfgspec_live={"name":"WP Spectrum Live","unique_id":f"{dev_id}_wp_spectrum_live","state_topic":f"{args.topic_base}/spectrum_live",
+            cfgspec_live={"name":"AT Spectrum Live","unique_id":f"{dev_id}_wp_spectrum_live","state_topic":f"{args.topic_base}/spectrum_live",
                      "value_template":"{{ value_json.ts }}","json_attributes_topic":f"{args.topic_base}/spectrum_live",
                      "availability_topic":f"{args.topic_base}/availability","device":dev,"icon":"mdi:waveform"}
             
             # Event log sensor
-            cfgevent={"name":"Event Log","unique_id":f"{dev_id}_event_log","state_topic":f"{args.topic_base}/event",
+            cfgevent={"name":"AT Event Log","unique_id":f"{dev_id}_event_log","state_topic":f"{args.topic_base}/event",
                      "value_template":"{{ value_json.start }}","json_attributes_topic":f"{args.topic_base}/event",
                      "availability_topic":f"{args.topic_base}/availability","device":dev,"icon":"mdi:calendar-clock"}
             
             # Create a switch to control spectrum recording
-            cfgswitch={"name":"Record Spectrum","unique_id":f"{dev_id}_record_spectrum",
+            cfgswitch={"name":"AT Record Spectrum","unique_id":f"{dev_id}_record_spectrum",
                       "state_topic":f"{args.topic_base}/record_spectrum/state",
                       "command_topic":f"{args.topic_base}/record_spectrum/set",
                       "payload_on":"ON","payload_off":"OFF",
