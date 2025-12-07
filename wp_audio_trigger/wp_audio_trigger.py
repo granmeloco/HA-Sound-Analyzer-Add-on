@@ -41,6 +41,12 @@ def a_corr(fc: float) -> float:
     den=(f2+20.6**2)*((f2+107.7**2)**0.5)*((f2+737.9**2)**0.5)*(f2+12194**2)
     return 20*math.log10(num/den)+2.0  # +2 dB ≈ IEC-Rundungskorrektur
 
+def c_corr(fc: float) -> float:
+    f=float(fc); f2=f*f
+    num=(12194**2)*(f2)
+    den=(f2+20.6**2)*(f2+12194**2)
+    return 20*math.log10(num/den)+0.06  # C-weighting correction
+
 def now_utc() -> str:
     return dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H-%M-%SZ")
 
@@ -131,6 +137,18 @@ button:hover{background:#138496}
     <span class=field-label>Max. Frequency [Hz]</span>
     <input type=number id=maxFreq value=20000 step=0.1>
   </div>
+  <div class=row style="margin-top:10px">
+    <span class=field-label>Publish interval [s]</span>
+    <input type=number id=publishInterval value=1 step=0.1 min=0.1>
+  </div>
+  <div class=row>
+    <span class=field-label>dB weighting</span>
+    <select id=dbWeighting style="padding:5px 8px;border:1px solid #999;font-size:13px;background:white">
+      <option value="A" selected>A</option>
+      <option value="Z">Z</option>
+      <option value="C">C</option>
+    </select>
+  </div>
 </div>
 
 <div class=section>
@@ -143,25 +161,25 @@ button:hover{background:#138496}
   </div>
   <div class=trigger-grid>
     <span class=field-label>1.</span>
-    <input type=number id=t1freq placeholder="">
+    <select id=t1freq style="padding:5px 8px;border:1px solid #999;font-size:13px;width:150px;background:white"></select>
     <input type=number id=t1amp placeholder="" step=0.1>
     <input type=number id=t1dur placeholder="" step=0.1>
   </div>
   <div class=trigger-grid>
     <span class=field-label>2.</span>
-    <input type=number id=t2freq placeholder="">
+    <select id=t2freq style="padding:5px 8px;border:1px solid #999;font-size:13px;width:150px;background:white"></select>
     <input type=number id=t2amp placeholder="" step=0.1>
     <input type=number id=t2dur placeholder="" step=0.1>
   </div>
   <div class=trigger-grid>
     <span class=field-label>3.</span>
-    <input type=number id=t3freq placeholder="">
+    <select id=t3freq style="padding:5px 8px;border:1px solid #999;font-size:13px;width:150px;background:white"></select>
     <input type=number id=t3amp placeholder="" step=0.1>
     <input type=number id=t3dur placeholder="" step=0.1>
   </div>
   <div class=trigger-grid>
     <span class=field-label>4.</span>
-    <input type=number id=t4freq placeholder="">
+    <select id=t4freq style="padding:5px 8px;border:1px solid #999;font-size:13px;width:150px;background:white"></select>
     <input type=number id=t4amp placeholder="" step=0.1>
     <input type=number id=t4dur placeholder="" step=0.1>
   </div>
@@ -228,13 +246,45 @@ button:hover{background:#138496}
 <script>
 const statusDiv=document.getElementById('status');
 
+// Frequency band definitions
+const freqBands={
+  '1octave':[31.5,63,125,250,500,1000,2000,4000,8000,16000],
+  '2octave':[31.5,44.7,63,89.1,125,177,250,354,500,707,1000,1414,2000,2828,4000,5657,8000,11314,16000],
+  '3octave':[31.5,40,50,63,80,100,125,160,200,250,315,400,500,630,800,1000,1250,1600,2000,2500,3150,4000,5000,6300,8000,10000,12500,16000,20000]
+};
+
+function updateFrequencyDropdowns(){
+  const bands=document.getElementById('b1oct').checked?'1octave':
+              document.getElementById('b2oct').checked?'2octave':'3octave';
+  const minFreq=parseFloat(document.getElementById('minFreq').value)||31.5;
+  const maxFreq=parseFloat(document.getElementById('maxFreq').value)||20000;
+  const freqs=freqBands[bands].filter(f=>f>=minFreq && f<=maxFreq);
+  
+  for(let i=1;i<=4;i++){
+    const sel=document.getElementById(`t${i}freq`);
+    const currentVal=parseFloat(sel.value);
+    sel.innerHTML='<option value="">-- None --</option>'+
+      freqs.map(f=>`<option value="${f}">${f>=100?Math.round(f):f} Hz</option>`).join('');
+    // Only restore value if it exists in the new frequency list
+    if(currentVal && freqs.includes(currentVal)){
+      sel.value=currentVal;
+    }else{
+      sel.value='';  // Reset to blank if frequency not available
+    }
+  }
+}
+
 // Load configuration
 fetch('api/config').then(r=>r.json()).then(data=>{
   document.getElementById('minFreq').value=data.minFreq||31.5;
   document.getElementById('maxFreq').value=data.maxFreq||20000;
+  document.getElementById('publishInterval').value=data.publishInterval||1;
+  document.getElementById('dbWeighting').value=data.dbWeighting||'A';
   if(data.bands==='1octave') document.getElementById('b1oct').checked=true;
   else if(data.bands==='2octave') document.getElementById('b2oct').checked=true;
   else document.getElementById('b3oct').checked=true;
+  
+  updateFrequencyDropdowns();
   
   for(let i=1;i<=4;i++){
     document.getElementById(`t${i}freq`).value=data.triggers[i-1]?.freq||'';
@@ -254,6 +304,13 @@ fetch('api/config').then(r=>r.json()).then(data=>{
   document.getElementById('cal1000').value=data.calibration?.cal1000||'';
   document.getElementById('cal4000').value=data.calibration?.cal4000||'';
   document.getElementById('cal16000').value=data.calibration?.cal16000||'';
+  
+  // Add event listeners for band and frequency range changes
+  document.getElementById('b1oct').addEventListener('change',updateFrequencyDropdowns);
+  document.getElementById('b2oct').addEventListener('change',updateFrequencyDropdowns);
+  document.getElementById('b3oct').addEventListener('change',updateFrequencyDropdowns);
+  document.getElementById('minFreq').addEventListener('change',updateFrequencyDropdowns);
+  document.getElementById('maxFreq').addEventListener('change',updateFrequencyDropdowns);
 }).catch(e=>console.error('Load error:',e));
 
 function saveConfig(){
@@ -261,6 +318,8 @@ function saveConfig(){
     bands:document.getElementById('b1oct').checked?'1octave':document.getElementById('b2oct').checked?'2octave':'3octave',
     minFreq:parseFloat(document.getElementById('minFreq').value),
     maxFreq:parseFloat(document.getElementById('maxFreq').value),
+    publishInterval:parseFloat(document.getElementById('publishInterval').value)||1,
+    dbWeighting:document.getElementById('dbWeighting').value||'A',
     triggers:[
       {freq:parseInt(document.getElementById('t1freq').value)||0,amp:parseFloat(document.getElementById('t1amp').value)||0,duration:parseFloat(document.getElementById('t1dur').value)||0},
       {freq:parseInt(document.getElementById('t2freq').value)||0,amp:parseFloat(document.getElementById('t2amp').value)||0,duration:parseFloat(document.getElementById('t2dur').value)||0},
@@ -488,6 +547,8 @@ def main():
         "bands": "3octave",  # default 1/3-octave
         "minFreq": 31.5,
         "maxFreq": 20000,
+        "publishInterval": 1,
+        "dbWeighting": "A",
         "triggers": [],
         "logic": "OR",
         "storageLocation": "/media/wp_audio/events",
@@ -518,8 +579,8 @@ def main():
     ap.add_argument("--samplerate",type=int,default=48000); ap.add_argument("--device",default="")
     ap.add_argument("--event-dir",default=analyzer_config.get("storageLocation", "/media/wp_audio/events")); ap.add_argument("--cal-file",default="/data/calibration.json")
     ap.add_argument("--publish-spectrum", type=lambda v:str(v).lower() in ("1","true","yes"), default=True)
-    ap.add_argument("--spectrum-weighting", choices=["A","Z"], default="Z")
-    ap.add_argument("--spectrum-interval", type=float, default=1.0)   # <-- jetzt float
+    ap.add_argument("--spectrum-weighting", choices=["A","Z","C"], default=analyzer_config.get("dbWeighting", "A"))
+    ap.add_argument("--spectrum-interval", type=float, default=analyzer_config.get("publishInterval", 1.0))
     ap.add_argument("--ui-port", type=int, default=8099)
     # Trigger configuration arguments
     for i in range(1, 6):
@@ -848,10 +909,16 @@ def main():
                 for fc,sos in sos_full.items():
                     y=sosfilt(sos,x)
                     lz=spl_db(np.sqrt(np.mean(y*y)))+band_corr.get(fc,0.0)
-                    v = lz + (a_corr(fc) if args.spectrum_weighting=="A" else 0.0)
-                    vals.append(v)
+                    if args.spectrum_weighting=="A":
+                        v = lz + a_corr(fc)
+                    elif args.spectrum_weighting=="C":
+                        v = lz + c_corr(fc)
+                    else:  # Z-weighting (no correction)
+                        v = lz
+                    vals.append(round(v, 1))  # Round to 1 decimal place
+                timestamp = now_utc()
                 payload={"bands":[str(int(fc)) if fc>=100 else str(fc) for fc in FCS_FULL],
-                         "values":vals,"weighting":args.spectrum_weighting,"ts":now_utc()}
+                         "values":vals,"weighting":args.spectrum_weighting,"ts":timestamp,"time":timestamp}
                 latest_payload.update(payload)
                 # Always publish to spectrum_live for visual display
                 try: client.publish(f"{args.topic_base}/spectrum_live", json.dumps(payload), qos=0)
