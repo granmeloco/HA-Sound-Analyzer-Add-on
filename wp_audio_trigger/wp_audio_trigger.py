@@ -809,6 +809,9 @@ def main():
             trigger_results = []
             current_time = now_utc()
             
+            # Only evaluate triggers that are actually configured (freq > 0 and amp > 0)
+            active_trigger_count = sum(1 for t in triggers if t.get("freq", 0) > 0 and t.get("amp", 0) > 0)
+            
             for trig in triggers:
                 freq = trig.get("freq", 0)
                 amp = trig.get("amp", 0)
@@ -856,6 +859,8 @@ def main():
                 trigger_event = any(trigger_results) if trigger_results else False
             
             # Debug: show trigger evaluation result
+            if len(trigger_results) > 0 and not S["trig"]:
+                print(f"[wp-audio] Trigger results: {trigger_results}, Logic={logic}, Event={trigger_event}", flush=True)
             if trigger_event and S["hold"] == 0:
                 print(f"[wp-audio] Trigger event started! Logic={logic}, Hold time will accumulate...", flush=True)
             
