@@ -868,6 +868,16 @@ def main():
             trigger_results = []
             current_time = now_utc()
             
+            # Debug: Show 250Hz amplitude every 10 seconds
+            if not hasattr(start_event, 'last_amp_log'):
+                start_event.last_amp_log = 0
+            if time.time() - start_event.last_amp_log > 10:
+                if 250 in LA:
+                    print(f"[wp-audio] DEBUG: 250Hz amplitude = {LA[250]:.1f} dB(A), Triggers configured: {len(triggers)}", flush=True)
+                    if triggers:
+                        print(f"[wp-audio] DEBUG: Trigger config = {triggers}, Logic = {logic}", flush=True)
+                start_event.last_amp_log = time.time()
+            
             # Only evaluate triggers that are actually configured (freq > 0 and amp > 0)
             active_trigger_count = sum(1 for t in triggers if t.get("freq", 0) > 0 and t.get("amp", 0) > 0)
             
