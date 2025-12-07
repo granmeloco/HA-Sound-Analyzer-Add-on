@@ -58,12 +58,12 @@ def load_cal(path):
 
 def device_info():
     # Use fixed ID to prevent duplicate devices on container restart
-    dev_id = "wp_audio_trigger"
+    dev_id = "audio_trigger"
     return {
         "identifiers": [dev_id],
-        "manufacturer": "WP Audio",
+        "manufacturer": "Audio Trigger",
         "model": "Audio Trigger Add-on",
-        "name": "WP Audio Trigger",
+        "name": "Audio Trigger",
     }, dev_id
 
 # ----------- Mini-Web-UI (Ingress) -----------
@@ -546,20 +546,20 @@ def main():
             print(f"[wp-audio] Subscribed to {args.topic_base}/record_spectrum/set", flush=True)
             
             dev, dev_id = device_info(); disc = "homeassistant"
-            cfgspec={"name":"AT Spectrum","unique_id":f"{dev_id}_wp_spectrum","state_topic":f"{args.topic_base}/spectrum",
+            cfgspec={"name":"AT Spectrum","unique_id":f"{dev_id}_at_spectrum","state_topic":f"{args.topic_base}/spectrum",
                      "value_template":"{{ value_json.ts }}","json_attributes_topic":f"{args.topic_base}/spectrum",
                      "availability_topic":f"{args.topic_base}/availability","device":dev,"icon":"mdi:waveform"}
-            cfgspec_live={"name":"AT Spectrum Live","unique_id":f"{dev_id}_wp_spectrum_live","state_topic":f"{args.topic_base}/spectrum_live",
+            cfgspec_live={"name":"AT Spectrum Live","unique_id":f"{dev_id}_at_spectrum_live","state_topic":f"{args.topic_base}/spectrum_live",
                      "value_template":"{{ value_json.ts }}","json_attributes_topic":f"{args.topic_base}/spectrum_live",
                      "availability_topic":f"{args.topic_base}/availability","device":dev,"icon":"mdi:waveform"}
             
             # Event log sensor
-            cfgevent={"name":"AT Event Log","unique_id":f"{dev_id}_event_log","state_topic":f"{args.topic_base}/event",
+            cfgevent={"name":"AT Event Log","unique_id":f"{dev_id}_at_event_log","state_topic":f"{args.topic_base}/event",
                      "value_template":"{{ value_json.start }}","json_attributes_topic":f"{args.topic_base}/event",
                      "availability_topic":f"{args.topic_base}/availability","device":dev,"icon":"mdi:calendar-clock"}
             
             # Create a switch to control spectrum recording
-            cfgswitch={"name":"AT Record Spectrum","unique_id":f"{dev_id}_record_spectrum",
+            cfgswitch={"name":"AT Record Spectrum","unique_id":f"{dev_id}_at_record_spectrum",
                       "state_topic":f"{args.topic_base}/record_spectrum/state",
                       "command_topic":f"{args.topic_base}/record_spectrum/set",
                       "payload_on":"ON","payload_off":"OFF",
@@ -573,12 +573,21 @@ def main():
             client.publish(f"{disc}/sensor/{dev_id}/spectrum_live/config", "", qos=1, retain=True)
             client.publish(f"{disc}/sensor/{dev_id}/octA_80/config", "", qos=1, retain=True)
             client.publish(f"{disc}/sensor/{dev_id}/octA_160/config", "", qos=1, retain=True)
+            client.publish(f"{disc}/sensor/{dev_id}/wp_spectrum/config", "", qos=1, retain=True)
+            client.publish(f"{disc}/sensor/{dev_id}/wp_spectrum_live/config", "", qos=1, retain=True)
+            client.publish(f"{disc}/sensor/{dev_id}/event_log/config", "", qos=1, retain=True)
+            client.publish(f"{disc}/switch/{dev_id}/record_spectrum/config", "", qos=1, retain=True)
+            # Also clean up old wp_audio_trigger device configs
+            client.publish(f"{disc}/sensor/wp_audio_trigger/wp_spectrum/config", "", qos=1, retain=True)
+            client.publish(f"{disc}/sensor/wp_audio_trigger/wp_spectrum_live/config", "", qos=1, retain=True)
+            client.publish(f"{disc}/sensor/wp_audio_trigger/event_log/config", "", qos=1, retain=True)
+            client.publish(f"{disc}/switch/wp_audio_trigger/record_spectrum/config", "", qos=1, retain=True)
             
             # Publish current discovery configs
-            client.publish(f"{disc}/sensor/{dev_id}/wp_spectrum/config", json.dumps(cfgspec), qos=1, retain=True)
-            client.publish(f"{disc}/sensor/{dev_id}/wp_spectrum_live/config", json.dumps(cfgspec_live), qos=1, retain=True)
-            client.publish(f"{disc}/sensor/{dev_id}/event_log/config", json.dumps(cfgevent), qos=1, retain=True)
-            client.publish(f"{disc}/switch/{dev_id}/record_spectrum/config", json.dumps(cfgswitch), qos=1, retain=True)
+            client.publish(f"{disc}/sensor/{dev_id}/at_spectrum/config", json.dumps(cfgspec), qos=1, retain=True)
+            client.publish(f"{disc}/sensor/{dev_id}/at_spectrum_live/config", json.dumps(cfgspec_live), qos=1, retain=True)
+            client.publish(f"{disc}/sensor/{dev_id}/at_event_log/config", json.dumps(cfgevent), qos=1, retain=True)
+            client.publish(f"{disc}/switch/{dev_id}/at_record_spectrum/config", json.dumps(cfgswitch), qos=1, retain=True)
             
             # Publish initial state
             client.publish(f"{args.topic_base}/record_spectrum/state", "ON" if record_spectrum["enabled"] else "OFF", qos=1, retain=True)
