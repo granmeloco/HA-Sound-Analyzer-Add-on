@@ -888,8 +888,8 @@ def main():
                     if freq in LA:
                         is_triggered = LA[freq] >= amp
                         trigger_results.append(is_triggered)
-                        if is_triggered and not S["trig"]:
-                            print(f"[wp-audio] DEBUG: Trigger {freq}Hz active: {LA[freq]:.1f} dB >= {amp:.1f} dB", flush=True)
+                        if is_triggered:
+                            print(f"[wp-audio] TRIGGER ACTIVATED: {freq}Hz @ {LA[freq]:.1f} dB (threshold {amp:.1f} dB)", flush=True)
                     else:
                         print(f"[wp-audio] WARNING: Trigger frequency {freq} Hz not found in current bands. Available: {sorted(LA.keys())}", flush=True)
                     
