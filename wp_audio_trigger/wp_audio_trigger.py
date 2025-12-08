@@ -75,6 +75,7 @@ def device_info():
 # ----------- Mini-Web-UI (Ingress) -----------
 latest_payload = {"bands": [], "values": [], "weighting": "Z", "ts": now_utc(), "la80": None, "la160": None}
 trigger_config = {"triggers": []}  # Will be populated from args
+analyzer_config = {}  # Will be populated in main()
 
 HTML = """<!DOCTYPE html><meta charset=utf-8>
 <title>Audio Analyzer Configuration</title>
@@ -596,7 +597,7 @@ def start_http(port):
 # --------------- Hauptprogramm ----------------
 def main():
     # Load full analyzer configuration FIRST, before argument parser
-    global trigger_config
+    global trigger_config, analyzer_config
     analyzer_config = {
         "bands": "3octave",  # default 1/3-octave
         "minFreq": 31.5,
