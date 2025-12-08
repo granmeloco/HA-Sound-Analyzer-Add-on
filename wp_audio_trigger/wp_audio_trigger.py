@@ -716,8 +716,8 @@ def main():
 
     # Ziel-SR & Filter-Builder
     fs_target = int(args.samplerate)
-    # Blockzeit passend zum Publish-Intervall (stabil zwischen 0.10 s und 0.25 s)
-    block_sec = max(0.10, min(0.25, float(args.spectrum_interval)))
+    # Blockzeit = Publish-Intervall für synchrone Spektrum-Erfassung
+    block_sec = float(args.spectrum_interval)
     def build_filters(fs):
         sos_low  = {fc: band_sos(fc, fs) for fc in FCS_LOW}
         sos_full = {fc: band_sos(fc, fs) for fc in FCS_FULL}
@@ -993,11 +993,22 @@ def main():
             else:  # OR (default)
                 trigger_event = any(trigger_results) if trigger_results else False
             
+            # Determine required hold duration from active triggers
+            # For AND logic: use maximum duration among all configured triggers
+            # For OR logic: use minimum duration among active triggers
+            required_duration = args.hold_sec  # fallback to default 2s
+            trigger_durations = [trig.get("duration", 0) for trig in triggers if trig.get("freq", 0) > 0 and trig.get("amp", 0) > 0]
+            if trigger_durations:
+                if logic == "AND":
+                    required_duration = max(trigger_durations) if trigger_durations else args.hold_sec
+                else:  # OR
+                    required_duration = min([d for d in trigger_durations if d > 0]) if any(d > 0 for d in trigger_durations) else args.hold_sec
+            
             # Debug: show trigger evaluation result
             if len(trigger_results) > 0 and not S["trig"]:
                 print(f"[wp-audio] Trigger results: {trigger_results}, Logic={logic}, Event={trigger_event}", flush=True)
             if trigger_event and S["hold"] == 0:
-                print(f"[wp-audio] Trigger event started! Logic={logic}, Hold time will accumulate...", flush=True)
+                print(f"[wp-audio] Trigger event started! Logic={logic}, Required duration: {required_duration}s", flush=True)
             
             # Use configured storage location and recording length
             storage_dir = analyzer_config.get("storageLocation", args.event_dir)
@@ -1006,8 +1017,8 @@ def main():
             if not S["trig"]:
                 if trigger_event:
                     S["hold"]+=block_sec
-                    print(f"[wp-audio] Accumulating hold time: {S['hold']:.2f}s / {args.hold_sec}s", flush=True)
-                    if S["hold"]>=args.hold_sec:
+                    print(f"[wp-audio] Accumulating hold time: {S['hold']:.2f}s / {required_duration:.2f}s", flush=True)
+                    if S["hold"]>=required_duration:
                         S["trig"]=True; S["post_left"]=rec_length
                         S["cur_dir"]=os.path.join(storage_dir, now_utc()); os.makedirs(S["cur_dir"], exist_ok=True)
                         S["event_audio"]=list(pre_buf); S["event_specs"]=list(spec_buf); S["peak80"]=-999.0; S["peak160"]=-999.0; S["overall_dbA"]=[]
