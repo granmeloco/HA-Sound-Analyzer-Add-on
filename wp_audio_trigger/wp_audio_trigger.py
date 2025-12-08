@@ -383,6 +383,60 @@ class H(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(HTML.encode("utf-8"))
                 return
+            if self.path == "/api/events":
+                # List all recorded events
+                storage_dir = analyzer_config.get("storageLocation", "/media/wp_audio/events")
+                events = []
+                try:
+                    if os.path.exists(storage_dir):
+                        for event_dir in sorted(os.listdir(storage_dir), reverse=True):
+                            event_path = os.path.join(storage_dir, event_dir)
+                            if os.path.isdir(event_path):
+                                metadata_file = os.path.join(event_path, "event_metadata.json")
+                                if os.path.exists(metadata_file):
+                                    with open(metadata_file, "r") as f:
+                                        metadata = json.load(f)
+                                        events.append(metadata)
+                except Exception as e:
+                    print(f"[wp-audio] Error listing events: {e}", flush=True)
+                self.send_response(200)
+                self.send_header("Content-Type","application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Cache-Control","no-store")
+                self.end_headers()
+                self.wfile.write(json.dumps(events).encode("utf-8"))
+                return
+            if self.path.startswith("/api/events/"):
+                # Serve event files: /api/events/{event_id}/{filename}
+                parts = self.path.split("/")
+                if len(parts) >= 5:
+                    event_id = parts[3]
+                    filename = parts[4]
+                    storage_dir = analyzer_config.get("storageLocation", "/media/wp_audio/events")
+                    file_path = os.path.join(storage_dir, event_id, filename)
+                    if os.path.exists(file_path) and os.path.isfile(file_path):
+                        # Determine content type
+                        if filename.endswith(".flac"):
+                            content_type = "audio/flac"
+                        elif filename.endswith(".csv"):
+                            content_type = "text/csv"
+                        elif filename.endswith(".json"):
+                            content_type = "application/json"
+                        else:
+                            content_type = "application/octet-stream"
+                        
+                        self.send_response(200)
+                        self.send_header("Content-Type", content_type)
+                        self.send_header("Access-Control-Allow-Origin", "*")
+                        self.send_header("Content-Length", str(os.path.getsize(file_path)))
+                        self.end_headers()
+                        
+                        with open(file_path, "rb") as f:
+                            self.wfile.write(f.read())
+                        return
+                self.send_response(404)
+                self.end_headers()
+                return
             if self.path == "/api/triggers":
                 self.send_response(200)
                 self.send_header("Content-Type","application/json")
