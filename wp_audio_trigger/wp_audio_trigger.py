@@ -1047,6 +1047,7 @@ def main():
                 else:
                     x_avg = x
                 vals=[]
+                energies=[]
                 for fc,sos in sos_full.items():
                     y=sosfilt(sos,x_avg)
                     lz=spl_db(np.sqrt(np.mean(y*y)))+corr_full.get(fc,0.0)
@@ -1057,10 +1058,14 @@ def main():
                     else:  # Z-weighting (no correction)
                         v = lz
                     vals.append(round(v, 1))  # Round to 1 decimal place
+                    energies.append(10**(v/10))
+                # Calculate sum level (energy sum, then convert to dB)
+                sum_level = 10 * np.log10(sum(energies)) if energies else 0.0
                 timestamp = now_utc()
                 payload={
                     "bands":[str(int(fc)) if fc>=100 else str(fc) for fc in FCS_FULL],
                     "values":vals,
+                    "sum_level":round(sum_level, 1),
                     "weighting":args.spectrum_weighting,
                     "averaging_period": args.averaging_period,
                     "ts":timestamp,
