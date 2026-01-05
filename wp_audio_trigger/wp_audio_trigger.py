@@ -891,14 +891,14 @@ def main():
     corr_low  = build_interpolated_corr(band_corr, FCS_LOW)
     corr_full = build_interpolated_corr(band_corr, FCS_FULL)
 
-        pre_buf=deque(maxlen=max(1,int(args.pre/block_sec)))
-        spec_buf=deque(maxlen=max(1,int(args.pre/block_sec)))  # Ring buffer for spectrum data
-        post_buf_audio=deque(maxlen=max(1,int(args.post/block_sec)))
-        post_buf_spec=deque(maxlen=max(1,int(args.post/block_sec)))
-        S = {"trig": False, "hold": 0, "post_left": 0, "peak80": -999.0, "peak160": -999.0,
-            "cur_dir": None, "event_audio": [], "event_specs": [], "overall_dbA": [],
-            "event_start_time": None, "actual_duration": 0, "recording_stopped": False,
-            "hold_start_idx": None, "hold_start_time": None}
+    pre_buf=deque(maxlen=max(1,int(args.pre/block_sec)))
+    spec_buf=deque(maxlen=max(1,int(args.pre/block_sec)))  # Ring buffer for spectrum data
+    post_buf_audio=deque(maxlen=max(1,int(args.post/block_sec)))
+    post_buf_spec=deque(maxlen=max(1,int(args.post/block_sec)))
+    S = {"trig": False, "hold": 0, "post_left": 0, "peak80": -999.0, "peak160": -999.0,
+        "cur_dir": None, "event_audio": [], "event_specs": [], "overall_dbA": [],
+        "event_start_time": None, "actual_duration": 0, "recording_stopped": False,
+        "hold_start_idx": None, "hold_start_time": None}
     os.makedirs(args.event_dir, exist_ok=True)
     
     # Trigger logging
