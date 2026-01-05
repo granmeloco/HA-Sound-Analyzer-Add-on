@@ -193,7 +193,9 @@ button:hover{background:#138496}
         <span class=field-label>5.</span>
         <span>
             Prominent frequency
-            <select id=promFreq style="padding:5px 8px;border:1px solid #999;font-size:13px;width:100px;background:white"></select>
+            <select id=promFreq1 style="padding:5px 8px;border:1px solid #999;font-size:13px;width:100px;background:white"></select>
+            or
+            <select id=promFreq2 style="padding:5px 8px;border:1px solid #999;font-size:13px;width:100px;background:white"></select>
             for <input type=number id=promDur placeholder="" step=0.1 style="width:60px"> s
         </span>
     </div>
@@ -308,15 +310,23 @@ function updateFrequencyDropdowns(){
             sel.value='';  // Reset to blank if frequency not available
         }
     }
-    // Update prominent frequency dropdown
-    const promSel=document.getElementById('promFreq');
-    const promVal=promSel.value;
-    promSel.innerHTML='<option value="">-- None --</option>'+
-        freqs.map(f=>`<option value="${f}">${f>=100?Math.round(f):f} Hz</option>`).join('');
-    if(promVal && freqs.map(String).includes(promVal)){
-        promSel.value=promVal;
+    // Update prominent frequency dropdowns
+    const promSel1=document.getElementById('promFreq1');
+    const promSel2=document.getElementById('promFreq2');
+    const promVal1=promSel1.value;
+    const promVal2=promSel2.value;
+    const options='<option value="">-- None --</option>'+freqs.map(f=>`<option value="${f}">${f>=100?Math.round(f):f} Hz</option>`).join('');
+    promSel1.innerHTML=options;
+    promSel2.innerHTML=options;
+    if(promVal1 && freqs.map(String).includes(promVal1)){
+        promSel1.value=promVal1;
     }else{
-        promSel.value='';
+        promSel1.value='';
+    }
+    if(promVal2 && freqs.map(String).includes(promVal2)){
+        promSel2.value=promVal2;
+    }else{
+        promSel2.value='';
     }
 }
 
@@ -339,7 +349,8 @@ fetch('api/config').then(r=>r.json()).then(data=>{
         document.getElementById(`t${i}dur`).value=data.triggers[i-1]?.duration||'';
     }
     // Prominent frequency trigger
-    document.getElementById('promFreq').value = data.prominentTrigger?.freq || '';
+    document.getElementById('promFreq1').value = data.prominentTrigger?.freq1 || '';
+    document.getElementById('promFreq2').value = data.prominentTrigger?.freq2 || '';
     document.getElementById('promDur').value = data.prominentTrigger?.duration || '';
   
   if(data.logic==='OR') document.getElementById('logicOr').checked=true;
@@ -383,7 +394,8 @@ function saveConfig(){
             {freq:document.getElementById('t4freq').value,amp:parseFloat(document.getElementById('t4amp').value)||0,duration:parseFloat(document.getElementById('t4dur').value)||0}
         ],
         prominentTrigger: {
-            freq: document.getElementById('promFreq').value,
+            freq1: document.getElementById('promFreq1').value,
+            freq2: document.getElementById('promFreq2').value,
             duration: parseFloat(document.getElementById('promDur').value)||0
         },
     logic:document.getElementById('logicOr').checked?'OR':'AND',
@@ -1217,26 +1229,33 @@ def main():
 
             # --- Prominent frequency trigger (No. 5) ---
             prom_trig = analyzer_config.get("prominentTrigger", {})
-            prom_freq = prom_trig.get("freq")
+            prom_freq1 = prom_trig.get("freq1")
+            prom_freq2 = prom_trig.get("freq2")
             prom_dur = prom_trig.get("duration", 0)
-            if prom_freq:
-                try:
-                    prom_freq_val = float(prom_freq)
-                except:
-                    prom_freq_val = None
-                if prom_freq_val and prom_freq_val in LA:
-                    # Use a buffer to track how long the selected freq is most prominent
-                    if not hasattr(main, "prominent_buffer"):
-                        main.prominent_buffer = deque(maxlen=max(1, int(prom_dur/block_sec)))
-                    # Is selected freq the max?
-                    is_prominent = all(LA[prom_freq_val] > LA[f] for f in LA if f != prom_freq_val)
-                    main.prominent_buffer.append(is_prominent)
-                    # Only trigger if it has been true for the whole duration
-                    if len(main.prominent_buffer) == main.prominent_buffer.maxlen and all(main.prominent_buffer):
-                        trigger_results.append(True)
-                        print(f"[wp-audio] TRIGGER ACTIVATED: Prominent frequency {prom_freq_val} Hz for {prom_dur}s", flush=True)
-                    else:
-                        trigger_results.append(False)
+            prom_freq_vals = []
+            try:
+                if prom_freq1:
+                    prom_freq_vals.append(float(prom_freq1))
+                if prom_freq2 and prom_freq2 != prom_freq1:
+                    prom_freq_vals.append(float(prom_freq2))
+            except:
+                prom_freq_vals = []
+            if prom_freq_vals:
+                if not hasattr(main, "prominent_buffer") or main.prominent_buffer.maxlen != max(1, int(prom_dur/block_sec)):
+                    main.prominent_buffer = deque(maxlen=max(1, int(prom_dur/block_sec)))
+                # Is any selected freq the max?
+                is_prominent = False
+                for pf in prom_freq_vals:
+                    if pf in LA and all(LA[pf] > LA[f] for f in LA if f != pf):
+                        is_prominent = True
+                        break
+                main.prominent_buffer.append(is_prominent)
+                # Only trigger if it has been true for the whole duration
+                if len(main.prominent_buffer) == main.prominent_buffer.maxlen and all(main.prominent_buffer):
+                    trigger_results.append(True)
+                    print(f"[wp-audio] TRIGGER ACTIVATED: Prominent frequency {prom_freq_vals} Hz for {prom_dur}s", flush=True)
+                else:
+                    trigger_results.append(False)
             
             # Apply logic (OR = any trigger, AND = all triggers)
             # If no valid triggers, do not trigger any event
