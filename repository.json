@@ -1,16 +1,4 @@
 {
-  "name": "HA Audio Analyzer Add-on",
-  "url": "https://github.com/granmeloco/HA-Sound-Analyzer-Add-on",
-  "maintainer": "granmeloco",
-  "addons": {
-    "wp_audio_trigger": {
-      "name": "WP Audio Trigger",
-      "slug": "wp_audio_trigger",
-      "url": "https://github.com/granmeloco/HA-Sound-Analyzer-Add-on",
-      "directory": "wp_audio_trigger",
-      "version": "0.1.87",
-      "arch": ["aarch64","armv7","armhf","amd64"]
-    }
-  }
+  "name": "HA Audio Analyzer Add-on"
 }
 
