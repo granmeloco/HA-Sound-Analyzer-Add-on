@@ -362,8 +362,11 @@ function updateFrequencyDropdowns(){
 
 // Load configuration
 fetch('api/config').then(r=>r.json()).then(data=>{
-    // Populate sensor dropdown with selected sensors
-    populateSensorDropdown(data.selected_sensors || []);
+        // Populate sensor dropdown with selected sensors (parse comma-separated string)
+        const selectedList = (typeof data.selected_sensors === 'string' && data.selected_sensors.trim())
+            ? data.selected_sensors.split(',').map(s => s.trim()).filter(Boolean)
+            : [];
+        populateSensorDropdown(selectedList);
   document.getElementById('minFreq').value=data.minFreq||31.5;
   document.getElementById('maxFreq').value=data.maxFreq||20000;
   document.getElementById('publishInterval').value=data.publishInterval||1;
@@ -412,9 +415,9 @@ fetch('api/config').then(r=>r.json()).then(data=>{
 }).catch(e=>console.error('Load error:',e));
 
 function saveConfig(){
-    // Get selected sensors from dropdown
+    // Get selected sensors from dropdown and join as comma-separated string
     const sensorDropdown = document.getElementById('sensorDropdown');
-    const selectedSensors = Array.from(sensorDropdown.selectedOptions).map(opt => opt.value);
+    const selectedSensors = Array.from(sensorDropdown.selectedOptions).map(opt => opt.value).join(',');
 
     const config={
     bands:document.getElementById('b1oct').checked?'1octave':document.getElementById('b2oct').checked?'2octave':'3octave',
