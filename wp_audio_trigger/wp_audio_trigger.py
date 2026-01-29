@@ -161,34 +161,13 @@ button:hover{background:#138496}
     <div class=section-title>Audio trigger settings</div>
 <div class=section>
     <div class=section-title>Recorded signal settings</div>
-    <div style="margin-bottom:10px">Please select all sensor signals to be recorded next to the sound signals.</div>
+    <div style="margin-bottom:10px">Enter sensor variable names to record, separated by commas (e.g. temperature,humidity,pressure):</div>
     <div class=row>
         <span class=field-label>Sensors</span>
-        <select id="sensorDropdown" multiple style="min-width:220px;padding:5px 8px;border:1px solid #999;font-size:13px;background:white">
-            <!-- Options will be populated by JS -->
-        </select>
+        <input type="text" id="sensorText" style="min-width:220px;padding:5px 8px;border:1px solid #999;font-size:13px;background:white" placeholder="temperature,humidity">
     </div>
 </div>
-// Example: List of available sensors (replace with dynamic fetch if needed)
-const availableSensors = [
-    { id: 'temperature', name: 'Temperature' },
-    { id: 'humidity', name: 'Humidity' },
-    { id: 'pressure', name: 'Pressure' },
-    { id: 'light', name: 'Light' },
-    { id: 'motion', name: 'Motion' }
-];
 
-function populateSensorDropdown(selected) {
-    const dropdown = document.getElementById('sensorDropdown');
-    dropdown.innerHTML = '';
-    availableSensors.forEach(sensor => {
-        const option = document.createElement('option');
-        option.value = sensor.id;
-        option.textContent = sensor.name;
-        if (selected && selected.includes(sensor.id)) option.selected = true;
-        dropdown.appendChild(option);
-    });
-}
   <div class=trigger-grid class=header>
     <span></span>
     <span>Frequency [Hz]</span>
@@ -362,11 +341,8 @@ function updateFrequencyDropdowns(){
 
 // Load configuration
 fetch('api/config').then(r=>r.json()).then(data=>{
-        // Populate sensor dropdown with selected sensors (parse comma-separated string)
-        const selectedList = (typeof data.selected_sensors === 'string' && data.selected_sensors.trim())
-            ? data.selected_sensors.split(',').map(s => s.trim()).filter(Boolean)
-            : [];
-        populateSensorDropdown(selectedList);
+    // Set sensor text field with comma-separated sensors
+    document.getElementById('sensorText').value = (typeof data.selected_sensors === 'string') ? data.selected_sensors : '';
   document.getElementById('minFreq').value=data.minFreq||31.5;
   document.getElementById('maxFreq').value=data.maxFreq||20000;
   document.getElementById('publishInterval').value=data.publishInterval||1;
@@ -415,9 +391,8 @@ fetch('api/config').then(r=>r.json()).then(data=>{
 }).catch(e=>console.error('Load error:',e));
 
 function saveConfig(){
-    // Get selected sensors from dropdown and join as comma-separated string
-    const sensorDropdown = document.getElementById('sensorDropdown');
-    const selectedSensors = Array.from(sensorDropdown.selectedOptions).map(opt => opt.value).join(',');
+    // Get sensors from text field
+    const selectedSensors = document.getElementById('sensorText').value;
 
     const config={
     bands:document.getElementById('b1oct').checked?'1octave':document.getElementById('b2oct').checked?'2octave':'3octave',
