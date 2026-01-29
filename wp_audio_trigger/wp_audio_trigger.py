@@ -747,7 +747,7 @@ def main():
     args.post = analyzer_config.get("preBuffer", 10)  # Use same value for post-buffer
     args.post = 30  # Fixed post-trigger time
     args.hold_sec = 2  # Fixed hold time (minimum duration for trigger to be active)
-    args.event_dir = analyzer_config.get("storageLocation", "/media/wp_audio/events")
+    args.event_dir = analyzer_config.get("storageLocation") or "/media/wp_audio/events"
     args.publish_spectrum = True
     args.spectrum_weighting = analyzer_config.get("dbWeighting", "A")
     args.spectrum_interval = analyzer_config.get("publishInterval", 1.0)
