@@ -55,9 +55,14 @@ def load_cal(path):
     try:
         with open(path) as f:
             d=json.load(f)
-        off=float(d.get("offset_db",0.0))
+        off=float(str(d.get("offset_db",0.0)).replace(",","."))
         # Preserve decimal center frequencies (e.g., 31.5 Hz)
-        band={float(k):float(v) for k,v in d.get("band_corr_db",{}).items()}
+        band = {}
+        for k, v in d.get("band_corr_db", {}).items():
+            try:
+                band[float(str(k).replace(",","."))] = float(str(v).replace(",","."))
+            except Exception:
+                print(f"[wp-audio] WARNING: invalid calibration entry {k}={v}: could not convert to float")
         print(f"[wp-audio] Kalibrierung: offset_db={off} band_corr={band}")
     except Exception:
         print(f"[wp-audio] Keine/ungültige Kalibrierdatei: {path} (verwende 0 dB)")
@@ -921,6 +926,8 @@ def main():
         "cur_dir": None, "event_audio": [], "event_specs": [], "overall_dbA": [],
         "event_start_time": None, "actual_duration": 0, "recording_stopped": False,
         "hold_start_idx": None, "hold_start_time": None}
+    if not args.event_dir:
+        raise ValueError("event_dir is empty! Please set a valid storage location.")
     os.makedirs(args.event_dir, exist_ok=True)
     
     # Trigger logging
